@@ -11,6 +11,115 @@ import { useNavigate } from "react-router-dom";
 const formatPrice = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 
+
+const getRelevantImageQuery = (product) => {
+  const title = String(product?.title || "").toLowerCase();
+  const description = String(product?.description || "").toLowerCase();
+  const category = String(product?.category || "").toLowerCase();
+  const subCategory = String(product?.subCategory || "").toLowerCase();
+  const text = `${title} ${description} ${category} ${subCategory}`;
+
+  const rules = [
+    [/gaming.*laptop|gaming.*notebook|gaming.*pc/, "gaming laptop computer"],
+    [/macbook|mac book/, "macbook laptop"],
+    [/laptop|notebook/, "laptop computer"],
+    [/earbud|airpod|tws/, "wireless earbuds"],
+    [/headphone|headset|over-ear|over ear/, "over ear headphones"],
+    [/speaker|soundbar/, "bluetooth speaker"],
+    [/mouse/, "computer mouse"],
+    [/keyboard|keypad/, "mechanical keyboard"],
+    [/monitor|display/, "computer monitor"],
+    [/camera|dslr|mirrorless/, "digital camera"],
+    [/smartwatch|smart watch/, "smartwatch"],
+    [/watch|timepiece/, "wrist watch"],
+    [/smartphone|iphone|phone|mobile/, "smartphone mobile"],
+    [/wallet|card holder/, "leather wallet"],
+    [/backpack/, "backpack"],
+    [/handbag|crossbody bag|tote|bag/, "fashion handbag"],
+    [/sunglass|eyewear/, "sunglasses"],
+    [/sneaker|trainer/, "sneakers shoes"],
+    [/running shoe|running shoes/, "running shoes"],
+    [/boot/, "boots shoes"],
+    [/shoe|footwear/, "shoes footwear"],
+    [/t-shirt|tshirt|tee/, "cotton t shirt"],
+    [/shirt/, "shirt clothing"],
+    [/jacket|coat/, "jacket clothing"],
+    [/dress|gown/, "women dress"],
+    [/jeans|denim/, "denim jeans"],
+    [/hoodie|sweatshirt/, "hoodie sweatshirt"],
+    [/lipstick/, "lipstick makeup"],
+    [/perfume|fragrance|cologne/, "perfume bottle"],
+    [/skincare|moisturizer|serum/, "skincare cosmetics"],
+    [/makeup|cosmetic/, "makeup cosmetics"],
+    [/cookware|baking|tray/, "kitchen cookware"],
+    [/frying pan|skillet|pan/, "frying pan kitchen"],
+    [/coffee maker/, "coffee maker"],
+    [/vacuum/, "robot vacuum cleaner"],
+    [/pillow|cushion/, "memory foam pillow"],
+    [/lamp|lighting/, "table lamp"],
+    [/football/, "football"],
+    [/basketball/, "basketball"],
+    [/cricket/, "cricket bat"],
+    [/yoga/, "yoga mat"],
+    [/dumbbell|fitness|gym/, "fitness dumbbells"],
+    [/book|novel/, "book"],
+  ];
+
+  const matched = rules.find(([pattern]) => pattern.test(text));
+  if (matched) return matched[1];
+
+  const categoryQueries = {
+    mobiles: "smartphone mobile",
+    laptops: "laptop computer",
+    electronics: "consumer electronics",
+    fashion: "fashion clothing",
+    shoes: "shoes footwear",
+    "home & kitchen": "home kitchen",
+    beauty: "beauty cosmetics",
+    grocery: "grocery food",
+    books: "books",
+    sports: "sports equipment",
+    accessories: "fashion accessories",
+  };
+
+  return categoryQueries[category] || "ecommerce product";
+};
+
+const hashProduct = (product) => {
+  const key = String(
+    product?._id || product?.slug || product?.id || product?.title || "product"
+  );
+
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+const getProductGalleryImages = (product) => {
+  const query = getRelevantImageQuery(product);
+  const seed = hashProduct(product);
+
+  const generatedImages = [0, 1, 2].map(
+    (offset) =>
+      `https://loremflickr.com/1000/1000/${encodeURIComponent(
+        query
+      )}?lock=${seed + offset}`
+  );
+
+  // Keep any backend images as a reliable fallback after the generated,
+  // product-specific images.
+  const backendImages = Array.isArray(product?.images)
+    ? product.images.filter(Boolean)
+    : [];
+
+  return [...generatedImages, ...backendImages]
+    .filter((image, index, arr) => arr.indexOf(image) === index)
+    .slice(0, 6);
+};
+
 const ReviewForm = ({ productId, onSubmitted }) => {
   const { isAuthenticated } = useAuth();
   const [rating, setRating] = useState(5);
@@ -141,10 +250,19 @@ const ProductDetails = () => {
       <div className="product-details-grid">
         <div>
           <div className="product-gallery-main">
-            <img src={product.images[activeImage]} alt={product.title} />
+            <img
+              src={getProductGalleryImages(product)[activeImage]}
+              alt={product.title}
+              onError={(e) => {
+                const fallback = product?.images?.[0];
+                if (fallback && e.currentTarget.src !== fallback) {
+                  e.currentTarget.src = fallback;
+                }
+              }}
+            />
           </div>
           <div className="product-gallery-thumbs">
-            {product.images.map((img, i) => (
+            {getProductGalleryImages(product).map((img, i) => (
               <button
                 key={i}
                 className={`product-gallery-thumb ${i === activeImage ? "active" : ""}`}

@@ -345,459 +345,117 @@ const getUniqueProductImage = (product, preferredImage = "") => {
    3. Existing backend image
    ========================================================= */
 
-const getProductImage = (product) => {
+const getRelevantImageQuery = (product) => {
   const title = String(product?.title || "").toLowerCase();
-  const brand = String(product?.brand || "").toLowerCase();
+  const description = String(product?.description || "").toLowerCase();
   const category = String(product?.category || "").toLowerCase();
-
-  const text = `${title} ${brand} ${category}`;
-
-  /* ---------------- GAMING LAPTOP ---------------- */
-
-  if (
-    text.includes("gaming laptop") ||
-    text.includes("gaming notebook") ||
-    text.includes("gaming pc")
-  ) {
-    return PRODUCT_IMAGES.gamingLaptop;
-  }
-
-  /* ---------------- MACBOOK ---------------- */
-
-  if (
-    text.includes("macbook") ||
-    text.includes("mac book")
-  ) {
-    return PRODUCT_IMAGES.macbook;
-  }
-
-  /* ---------------- LAPTOP ---------------- */
-
-  if (
-    text.includes("laptop") ||
-    text.includes("notebook") ||
-    category.includes("laptop")
-  ) {
-    return PRODUCT_IMAGES.laptop;
-  }
-
-  /* ---------------- EARBUDS ---------------- */
-
-  if (
-    text.includes("earbud") ||
-    text.includes("airpod") ||
-    text.includes("tws")
-  ) {
-    return PRODUCT_IMAGES.earbuds;
-  }
-
-  /* ---------------- HEADPHONES ---------------- */
-
-  if (
-    text.includes("headphone") ||
-    text.includes("headset") ||
-    text.includes("over-ear") ||
-    text.includes("over ear")
-  ) {
-    return PRODUCT_IMAGES.headphones;
-  }
-
-  /* ---------------- SPEAKER ---------------- */
-
-  if (
-    text.includes("speaker") ||
-    text.includes("soundbar") ||
-    text.includes("bluetooth speaker")
-  ) {
-    return PRODUCT_IMAGES.speaker;
-  }
-
-  /* ---------------- MOUSE ---------------- */
-
-  if (
-    text.includes("mouse") ||
-    text.includes("glidemouse")
-  ) {
-    return PRODUCT_IMAGES.mouse;
-  }
-
-  /* ---------------- KEYBOARD ---------------- */
-
-  if (
-    text.includes("keyboard") ||
-    text.includes("keypad")
-  ) {
-    return PRODUCT_IMAGES.keyboard;
-  }
-
-  /* ---------------- MONITOR ---------------- */
-
-  if (
-    text.includes("monitor") ||
-    text.includes("display")
-  ) {
-    return PRODUCT_IMAGES.monitor;
-  }
-
-  /* ---------------- WEBCAM ---------------- */
-
-  if (
-    text.includes("webcam") ||
-    text.includes("web cam")
-  ) {
-    return PRODUCT_IMAGES.webcam;
-  }
-
-  /* ---------------- CAMERA ---------------- */
-
-  if (
-    text.includes("camera") ||
-    text.includes("dslr") ||
-    text.includes("mirrorless")
-  ) {
-    return PRODUCT_IMAGES.camera;
-  }
-
-  /* ---------------- SMARTWATCH ---------------- */
-
-  if (
-    text.includes("smartwatch") ||
-    text.includes("smart watch")
-  ) {
-    return PRODUCT_IMAGES.smartwatch;
-  }
-
-  /* ---------------- WATCH ---------------- */
-
-  if (
-    text.includes("watch") ||
-    text.includes("timepiece")
-  ) {
-    return PRODUCT_IMAGES.watch;
-  }
-
-  /* ---------------- MOBILE ---------------- */
-
-  if (
-    text.includes("iphone") ||
-    text.includes("smartphone") ||
-    text.includes("phone") ||
-    category.includes("mobile")
-  ) {
-    return PRODUCT_IMAGES.mobile;
-  }
-
-  /* ---------------- WALLET ---------------- */
-
-  if (
-    text.includes("wallet") ||
-    text.includes("bifold") ||
-    text.includes("card holder")
-  ) {
-    return PRODUCT_IMAGES.wallet;
-  }
-
-  /* ---------------- BACKPACK ---------------- */
-
-  if (
-    text.includes("backpack") ||
-    text.includes("rucksack")
-  ) {
-    return PRODUCT_IMAGES.backpack;
-  }
-
-  /* ---------------- BAG ---------------- */
-
-  if (
-    text.includes("bag") ||
-    text.includes("handbag") ||
-    text.includes("tote")
-  ) {
-    return PRODUCT_IMAGES.bag;
-  }
-
-  /* ---------------- SUNGLASSES ---------------- */
-
-  if (
-    text.includes("sunglass") ||
-    text.includes("eyewear")
-  ) {
-    return PRODUCT_IMAGES.sunglasses;
-  }
-
-  /* ---------------- SNEAKERS ---------------- */
-
-  if (
-    text.includes("sneaker") ||
-    text.includes("trainer")
-  ) {
-    return PRODUCT_IMAGES.sneakers;
-  }
-
-  /* ---------------- RUNNING SHOES ---------------- */
-
-  if (
-    text.includes("running shoe") ||
-    text.includes("running shoes")
-  ) {
-    return PRODUCT_IMAGES.running;
-  }
-
-  /* ---------------- BOOTS ---------------- */
-
-  if (text.includes("boot")) {
-    return PRODUCT_IMAGES.boots;
-  }
-
-  /* ---------------- GENERAL SHOES ---------------- */
-
-  if (
-    text.includes("shoe") ||
-    category.includes("shoe")
-  ) {
-    return PRODUCT_IMAGES.shoes;
-  }
-
-  /* ---------------- T-SHIRT ---------------- */
-
-  if (
-    text.includes("t-shirt") ||
-    text.includes("tshirt") ||
-    text.includes("tee")
-  ) {
-    return PRODUCT_IMAGES.tshirt;
-  }
-
-  /* ---------------- SHIRT ---------------- */
-
-  if (
-    text.includes("shirt") ||
-    text.includes("formal shirt")
-  ) {
-    return PRODUCT_IMAGES.shirt;
-  }
-
-  /* ---------------- JACKET ---------------- */
-
-  if (
-    text.includes("jacket") ||
-    text.includes("coat")
-  ) {
-    return PRODUCT_IMAGES.jacket;
-  }
-
-  /* ---------------- DRESS ---------------- */
-
-  if (
-    text.includes("dress") ||
-    text.includes("gown")
-  ) {
-    return PRODUCT_IMAGES.dress;
-  }
-
-  /* ---------------- JEANS ---------------- */
-
-  if (
-    text.includes("jeans") ||
-    text.includes("denim")
-  ) {
-    return PRODUCT_IMAGES.jeans;
-  }
-
-  /* ---------------- HOODIE ---------------- */
-
-  if (text.includes("hoodie")) {
-    return PRODUCT_IMAGES.hoodie;
-  }
-
-  /* ---------------- FASHION FALLBACK ---------------- */
-
-  if (category.includes("fashion")) {
-    return PRODUCT_IMAGES.tshirt;
-  }
-
-  /* ---------------- BEAUTY ---------------- */
-
-  if (
-    text.includes("lipstick") ||
-    text.includes("lip color") ||
-    text.includes("lip colour")
-  ) {
-    return PRODUCT_IMAGES.lipstick;
-  }
-
-  if (
-    text.includes("perfume") ||
-    text.includes("fragrance") ||
-    text.includes("cologne")
-  ) {
-    return PRODUCT_IMAGES.perfume;
-  }
-
-  if (
-    text.includes("skincare") ||
-    text.includes("skin care") ||
-    text.includes("moisturizer") ||
-    text.includes("serum")
-  ) {
-    return PRODUCT_IMAGES.skincare;
-  }
-
-  if (
-    text.includes("makeup") ||
-    text.includes("cosmetic") ||
-    category.includes("beauty")
-  ) {
-    return PRODUCT_IMAGES.makeup;
-  }
-
-  /* ---------------- HOME / KITCHEN ---------------- */
-
-  if (
-    text.includes("baking") ||
-    text.includes("bake") ||
-    text.includes("tray") ||
-    text.includes("cookware")
-  ) {
-    return PRODUCT_IMAGES.cookware;
-  }
-
-  if (
-    text.includes("pan") ||
-    text.includes("frying pan") ||
-    text.includes("skillet")
-  ) {
-    return PRODUCT_IMAGES.pan;
-  }
-
-  if (
-    text.includes("lamp") ||
-    text.includes("light") ||
-    text.includes("lighting")
-  ) {
-    return PRODUCT_IMAGES.lamp;
-  }
-
-  if (
-    text.includes("pillow") ||
-    text.includes("cushion")
-  ) {
-    return PRODUCT_IMAGES.pillow;
-  }
-
-  if (
-    text.includes("sofa") ||
-    text.includes("chair") ||
-    text.includes("furniture")
-  ) {
-    return PRODUCT_IMAGES.furniture;
-  }
-
-  if (
-    category.includes("home") ||
-    category.includes("kitchen")
-  ) {
-    return PRODUCT_IMAGES.kitchen;
-  }
-
-  /* ---------------- SPORTS ---------------- */
-
-  if (text.includes("football")) {
-    return PRODUCT_IMAGES.football;
-  }
-
-  if (text.includes("basketball")) {
-    return PRODUCT_IMAGES.basketball;
-  }
-
-  if (text.includes("cricket")) {
-    return PRODUCT_IMAGES.cricket;
-  }
-
-  if (
-    text.includes("yoga") ||
-    text.includes("yoga mat")
-  ) {
-    return PRODUCT_IMAGES.yoga;
-  }
-
-  if (
-    text.includes("fitness") ||
-    text.includes("dumbbell") ||
-    text.includes("gym")
-  ) {
-    return PRODUCT_IMAGES.fitness;
-  }
-
-  if (category.includes("sport")) {
-    return PRODUCT_IMAGES.fitness;
-  }
-
-  /* ---------------- BOOKS ---------------- */
-
-  if (
-    text.includes("book") ||
-    text.includes("novel") ||
-    category.includes("book")
-  ) {
-    return PRODUCT_IMAGES.book;
-  }
-
-  /* ---------------- CATEGORY FALLBACK ---------------- */
-
-  if (category.includes("mobile")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Mobiles);
-  }
-
-  if (category.includes("laptop")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Laptops);
-  }
-
-  if (category.includes("electronic")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Electronics);
-  }
-
-  if (category.includes("fashion")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Fashion);
-  }
-
-  if (category.includes("shoe")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Shoes);
-  }
-
-  if (
-    category.includes("home") ||
-    category.includes("kitchen")
-  ) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES["Home & Kitchen"]);
-  }
-
-  if (category.includes("beauty")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Beauty);
-  }
-
-  if (category.includes("grocery")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Grocery);
-  }
-
-  if (category.includes("book")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Books);
-  }
-
-  if (category.includes("sport")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Sports);
-  }
-
-  if (category.includes("accessor")) {
-    return getUniqueProductImage(product, CATEGORY_IMAGES.Accessories);
-  }
-
-  /* ---------------- LAST FALLBACK ---------------- */
-
-  return getUniqueProductImage(
-    product,
-    product?.images?.[0] || CATEGORY_IMAGES.Electronics
+  const subCategory = String(product?.subCategory || "").toLowerCase();
+  const text = `${title} ${description} ${category} ${subCategory}`;
+
+  const rules = [
+    [/gaming.*laptop|gaming.*notebook|gaming.*pc/, "gaming laptop computer"],
+    [/macbook|mac book/, "macbook laptop"],
+    [/laptop|notebook/, "laptop computer"],
+    [/earbud|airpod|tws/, "wireless earbuds"],
+    [/headphone|headset|over-ear|over ear/, "over ear headphones"],
+    [/speaker|soundbar/, "bluetooth speaker"],
+    [/mouse/, "computer mouse"],
+    [/keyboard|keypad/, "mechanical keyboard"],
+    [/monitor|display/, "computer monitor"],
+    [/webcam|web cam/, "webcam"],
+    [/camera|dslr|mirrorless/, "digital camera"],
+    [/smartwatch|smart watch/, "smartwatch"],
+    [/watch|timepiece/, "wrist watch"],
+    [/iphone/, "iphone smartphone"],
+    [/smartphone|phone|mobile/, "smartphone mobile"],
+    [/wallet|bifold|card holder/, "leather wallet"],
+    [/backpack|rucksack/, "backpack"],
+    [/handbag|crossbody bag|tote|bag/, "fashion handbag"],
+    [/sunglass|eyewear/, "sunglasses"],
+    [/sneaker|trainer/, "sneakers shoes"],
+    [/running shoe|running shoes/, "running shoes"],
+    [/boot/, "boots shoes"],
+    [/shoe|footwear/, "shoes footwear"],
+    [/t-shirt|tshirt|tee/, "cotton t shirt"],
+    [/shirt/, "shirt clothing"],
+    [/jacket|coat/, "jacket clothing"],
+    [/dress|gown/, "women dress"],
+    [/jeans|denim/, "denim jeans"],
+    [/hoodie|sweatshirt/, "hoodie sweatshirt"],
+    [/lipstick|lip color|lip colour/, "lipstick makeup"],
+    [/perfume|fragrance|cologne/, "perfume bottle"],
+    [/skincare|skin care|moisturizer|serum/, "skincare cosmetics"],
+    [/makeup|cosmetic/, "makeup cosmetics"],
+    [/cookware|baking|tray/, "kitchen cookware"],
+    [/frying pan|skillet|pan/, "frying pan kitchen"],
+    [/coffee maker/, "coffee maker"],
+    [/vacuum/, "robot vacuum cleaner"],
+    [/pillow|cushion/, "memory foam pillow"],
+    [/lamp|lighting/, "table lamp"],
+    [/sofa|chair|furniture/, "home furniture"],
+    [/football/, "football"],
+    [/basketball/, "basketball"],
+    [/cricket/, "cricket bat"],
+    [/yoga/, "yoga mat"],
+    [/dumbbell|fitness|gym/, "fitness dumbbells"],
+    [/book|novel/, "book"],
+    [/olive oil/, "olive oil grocery"],
+    [/dry fruits|nuts/, "dry fruits"],
+    [/pasta/, "pasta food"],
+    [/coffee/, "coffee beans"],
+  ];
+
+  const matched = rules.find(([pattern]) => pattern.test(text));
+  if (matched) return matched[1];
+
+  const categoryQueries = {
+    mobiles: "smartphone mobile",
+    laptops: "laptop computer",
+    electronics: "consumer electronics",
+    fashion: "fashion clothing",
+    shoes: "shoes footwear",
+    "home & kitchen": "home kitchen",
+    beauty: "beauty cosmetics",
+    grocery: "grocery food",
+    books: "books",
+    sports: "sports equipment",
+    accessories: "fashion accessories",
+  };
+
+  return categoryQueries[category] || "ecommerce product";
+};
+
+const hashProduct = (product) => {
+  const key = String(
+    product?._id ||
+    product?.slug ||
+    product?.id ||
+    product?.title ||
+    "product"
   );
+
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+const getGeneratedProductImage = (product, index = 0) => {
+  const query = getRelevantImageQuery(product);
+  const seed = hashProduct(product) + index;
+
+  return `https://loremflickr.com/900/900/${encodeURIComponent(
+    query
+  )}?lock=${seed}`;
+};
+
+const getProductImage = (product) => {
+  // Use a deterministic, product-specific relevant image first.
+  // The same product therefore keeps the same image everywhere,
+  // while different products get different lock values.
+  return getGeneratedProductImage(product, 0);
 };
 
 /* =========================================================
@@ -838,10 +496,16 @@ const ProductCard = ({ product, compact = false }) => {
             alt={product.title}
             loading="lazy"
             onError={(e) => {
-              const fallbackImage = getUniqueProductImage(
-                product,
-                CATEGORY_IMAGES.Electronics
-              );
+              const backendImage = Array.isArray(product?.images)
+                ? product.images[0]
+                : "";
+
+              const fallbackImage =
+                backendImage ||
+                getUniqueProductImage(
+                  product,
+                  CATEGORY_IMAGES[product?.category] || CATEGORY_IMAGES.Electronics
+                );
 
               if (e.currentTarget.src !== fallbackImage) {
                 e.currentTarget.src = fallbackImage;
