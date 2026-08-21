@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, X } from "lucide-react";
 import ProductCard from "../components/ProductCard.jsx";
@@ -21,7 +21,7 @@ const CATEGORIES = [
 
 const RATINGS = [4, 3, 2, 1];
 
-const getFiltersFromParams = (params) => ({
+const getFilters = (params) => ({
   category: params.get("category") || "",
   minPrice: params.get("minPrice") || "",
   maxPrice: params.get("maxPrice") || "",
@@ -30,7 +30,7 @@ const getFiltersFromParams = (params) => ({
   page: Number(params.get("page")) || 1,
 });
 
-const FilterPanel = ({ filters, setFilters, onClose }) => (
+const FilterPanel = ({ filters, updateFilter, onClose }) => (
   <div className="filter-panel">
     <div className="flex items-center justify-between hide-desktop mb-3">
       <h3>Filters</h3>
@@ -53,15 +53,8 @@ const FilterPanel = ({ filters, setFilters, onClose }) => (
             type="radio"
             name="category"
             checked={filters.category === cat}
-            onChange={() =>
-              setFilters((f) => ({
-                ...f,
-                category: cat,
-                page: 1,
-              }))
-            }
+            onChange={() => updateFilter("category", cat)}
           />
-
           {cat}
         </label>
       ))}
@@ -70,13 +63,7 @@ const FilterPanel = ({ filters, setFilters, onClose }) => (
         <button
           type="button"
           className="filter-clear"
-          onClick={() =>
-            setFilters((f) => ({
-              ...f,
-              category: "",
-              page: 1,
-            }))
-          }
+          onClick={() => updateFilter("category", "")}
         >
           Clear category
         </button>
@@ -93,11 +80,7 @@ const FilterPanel = ({ filters, setFilters, onClose }) => (
           placeholder="Min"
           value={filters.minPrice}
           onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              minPrice: e.target.value,
-              page: 1,
-            }))
+            updateFilter("minPrice", e.target.value)
           }
         />
 
@@ -107,11 +90,7 @@ const FilterPanel = ({ filters, setFilters, onClose }) => (
           placeholder="Max"
           value={filters.maxPrice}
           onChange={(e) =>
-            setFilters((f) => ({
-              ...f,
-              maxPrice: e.target.value,
-              page: 1,
-            }))
+            updateFilter("maxPrice", e.target.value)
           }
         />
       </div>
@@ -126,15 +105,8 @@ const FilterPanel = ({ filters, setFilters, onClose }) => (
             type="radio"
             name="rating"
             checked={String(filters.minRating) === String(r)}
-            onChange={() =>
-              setFilters((f) => ({
-                ...f,
-                minRating: r,
-                page: 1,
-              }))
-            }
+            onChange={() => updateFilter("minRating", r)}
           />
-
           {r}★ & above
         </label>
       ))}
@@ -143,13 +115,7 @@ const FilterPanel = ({ filters, setFilters, onClose }) => (
         <button
           type="button"
           className="filter-clear"
-          onClick={() =>
-            setFilters((f) => ({
-              ...f,
-              minRating: "",
-              page: 1,
-            }))
-          }
+          onClick={() => updateFilter("minRating", "")}
         >
           Clear rating
         </button>
@@ -162,7 +128,6 @@ const Products = () => {
   const [params, setParams] = useSearchParams();
 
   const [products, setProducts] = useState([]);
-
   const [meta, setMeta] = useState({
     page: 1,
     pages: 1,
@@ -174,131 +139,107 @@ const Products = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   /*
-   * IMPORTANT:
-   * URL is the source of truth for navigation.
+   * URL IS THE SINGLE SOURCE OF TRUTH.
    *
-   * This means:
+   * Example:
    * /products?category=Fashion
    * /products?category=Mobiles
    *
-   * will always update the filters correctly.
+   * Whenever URL changes, this value changes automatically.
    */
-  const [filters, setFilters] = useState(() =>
-    getFiltersFromParams(params)
-  );
+  const filters = getFilters(params);
 
   /*
-   * -------------------------------------------------------
-   * URL → FILTERS
-   * -------------------------------------------------------
-   *
-   * Whenever navbar/category navigation changes the URL,
-   * update the filters state from the new URL.
-   *
-   * This fixes:
-   * Fashion → Mobiles
-   * Mobiles → Electronics
-   * Electronics → Shoes
-   * etc.
+   * Update URL directly.
+   * No filters state.
+   * No URL <-> state synchronization loop.
    */
-  useEffect(() => {
-    const urlFilters = getFiltersFromParams(params);
+  const updateFilter = (key, value) => {
+    const next = new URLSearchParams(params);
 
-    setFilters((current) => {
-      if (
-        current.category === urlFilters.category &&
-        current.minPrice === urlFilters.minPrice &&
-        current.maxPrice === urlFilters.maxPrice &&
-        String(current.minRating) === String(urlFilters.minRating) &&
-        current.sort === urlFilters.sort &&
-        Number(current.page) === Number(urlFilters.page)
-      ) {
-        return current;
-      }
-
-      return urlFilters;
-    });
-  }, [params]);
-
-  /*
-   * -------------------------------------------------------
-   * FILTERS → URL
-   * -------------------------------------------------------
-   *
-   * Whenever filters are changed from the filter panel,
-   * update the URL.
-   */
-  useEffect(() => {
-    const next = {};
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== "" && value !== undefined && value !== null) {
-        next[key] = value;
-      }
-    });
-
-    const currentQuery = params.toString();
-
-    const nextParams = new URLSearchParams(next);
-    const nextQuery = nextParams.toString();
-
-    if (currentQuery !== nextQuery) {
-      setParams(nextParams, { replace: true });
+    if (value === "" || value === undefined || value === null) {
+      next.delete(key);
+    } else {
+      next.set(key, String(value));
     }
-  }, [filters, params, setParams]);
+
+    /*
+     * Any filter change starts from page 1.
+     */
+    if (key !== "page") {
+      next.set("page", "1");
+    }
+
+    /*
+     * Keep URL clean.
+     */
+    if (next.get("page") === "1") {
+      next.delete("page");
+    }
+
+    setParams(next);
+  };
 
   /*
-   * -------------------------------------------------------
    * FETCH PRODUCTS
-   * -------------------------------------------------------
-   */
-
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const query = {
-        category: filters.category || undefined,
-        minPrice: filters.minPrice || undefined,
-        maxPrice: filters.maxPrice || undefined,
-        minRating: filters.minRating || undefined,
-        sort: filters.sort || undefined,
-        page: filters.page,
-        limit: 12,
-      };
-
-      const { data } = await productAPI.getAll(query);
-
-      setProducts(data.products || []);
-
-      setMeta({
-        page: data.page || 1,
-        pages: data.pages || 1,
-        total: data.total || 0,
-      });
-    } catch (err) {
-      setProducts([]);
-      setError(
-        err?.message || "Unable to load products right now."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  /*
-   * Fetch whenever filters change.
+   *
+   * This runs whenever the URL/search parameters change.
+   *
+   * So clicking:
+   * Fashion -> Mobiles
+   *
+   * changes the URL and automatically fetches Mobiles.
    */
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    let cancelled = false;
 
-  /*
-   * -------------------------------------------------------
-   * RENDER
-   * -------------------------------------------------------
-   */
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const query = {
+          category: filters.category || undefined,
+          minPrice: filters.minPrice || undefined,
+          maxPrice: filters.maxPrice || undefined,
+          minRating: filters.minRating || undefined,
+          sort: filters.sort || undefined,
+          page: filters.page,
+          limit: 12,
+        };
+
+        const { data } = await productAPI.getAll(query);
+
+        if (cancelled) return;
+
+        setProducts(data.products || []);
+
+        setMeta({
+          page: data.page || 1,
+          pages: data.pages || 1,
+          total: data.total || 0,
+        });
+      } catch (err) {
+        if (cancelled) return;
+
+        setProducts([]);
+        setError(
+          err?.message ||
+            "Unable to load products right now."
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
 
   return (
     <div
@@ -311,9 +252,7 @@ const Products = () => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 style={{ fontSize: "1.4rem" }}>
-            {filters.category
-              ? filters.category
-              : "All Products"}
+            {filters.category || "All Products"}
           </h1>
 
           <p className="text-muted mt-2">
@@ -335,34 +274,21 @@ const Products = () => {
             className="form-select"
             value={filters.sort}
             onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                sort: e.target.value,
-                page: 1,
-              }))
+              updateFilter("sort", e.target.value)
             }
             style={{ width: 190 }}
           >
-            <option value="">
-              Sort: Featured
-            </option>
-
-            <option value="newest">
-              Newest Arrivals
-            </option>
-
+            <option value="">Sort: Featured</option>
+            <option value="newest">Newest Arrivals</option>
             <option value="price_asc">
               Price: Low to High
             </option>
-
             <option value="price_desc">
               Price: High to Low
             </option>
-
             <option value="rating">
               Avg. Customer Rating
             </option>
-
             <option value="discount">
               Highest Discount
             </option>
@@ -372,32 +298,26 @@ const Products = () => {
 
       <div className="products-layout">
         {/* DESKTOP FILTERS */}
-
         <aside className="hide-mobile">
           <FilterPanel
             filters={filters}
-            setFilters={setFilters}
+            updateFilter={updateFilter}
           />
         </aside>
 
         {/* MOBILE FILTERS */}
-
         {mobileFiltersOpen && (
           <div
             className="filter-drawer-overlay"
-            onClick={() =>
-              setMobileFiltersOpen(false)
-            }
+            onClick={() => setMobileFiltersOpen(false)}
           >
             <div
               className="filter-drawer"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
+              onClick={(e) => e.stopPropagation()}
             >
               <FilterPanel
                 filters={filters}
-                setFilters={setFilters}
+                updateFilter={updateFilter}
                 onClose={() =>
                   setMobileFiltersOpen(false)
                 }
@@ -407,7 +327,6 @@ const Products = () => {
         )}
 
         {/* PRODUCTS */}
-
         <div>
           {error && (
             <p
@@ -433,10 +352,10 @@ const Products = () => {
           ) : (
             <>
               <div className="product-grid">
-                {products.map((p) => (
+                {products.map((product) => (
                   <ProductCard
-                    key={p._id}
-                    product={p}
+                    key={product._id}
+                    product={product}
                   />
                 ))}
               </div>
@@ -448,10 +367,10 @@ const Products = () => {
                     className="btn btn-outline btn-sm"
                     disabled={meta.page <= 1}
                     onClick={() =>
-                      setFilters((f) => ({
-                        ...f,
-                        page: f.page - 1,
-                      }))
+                      updateFilter(
+                        "page",
+                        meta.page - 1
+                      )
                     }
                   >
                     Previous
@@ -468,10 +387,10 @@ const Products = () => {
                       meta.page >= meta.pages
                     }
                     onClick={() =>
-                      setFilters((f) => ({
-                        ...f,
-                        page: f.page + 1,
-                      }))
+                      updateFilter(
+                        "page",
+                        meta.page + 1
+                      )
                     }
                   >
                     Next
