@@ -15,7 +15,7 @@ import { ProductGridSkeleton } from "../components/Loading.jsx";
 import { productAPI } from "../services/api.js";
 
 /* =========================================================
-   SHOPSPHERE CATEGORIES
+   CATEGORIES
    ========================================================= */
 
 const CATEGORIES = [
@@ -33,9 +33,7 @@ const CATEGORIES = [
 ];
 
 /* =========================================================
-   CATEGORY-SPECIFIC IMAGES
-   These images are fixed for each category.
-   They do NOT depend on random product images from MongoDB.
+   CATEGORY IMAGES
    ========================================================= */
 
 const CATEGORY_IMAGES = {
@@ -74,7 +72,7 @@ const CATEGORY_IMAGES = {
 };
 
 /* =========================================================
-   SECTION COMPONENT
+   SECTION
    ========================================================= */
 
 const Section = ({
@@ -103,138 +101,260 @@ const Section = ({
 );
 
 /* =========================================================
-   HOME PAGE
+   HOME
    ========================================================= */
 
 const Home = () => {
   const [highlights, setHighlights] = useState(null);
+
   const [allProducts, setAllProducts] = useState([]);
+
   const [fashionProducts, setFashionProducts] = useState([]);
+
   const [electronicsProducts, setElectronicsProducts] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
 
   /* =======================================================
-     LOAD PRODUCTS
+     LOAD DATA
+     IMPORTANT:
+     We DON'T use Promise.all().
+     Each API request is handled independently.
      ======================================================= */
 
   useEffect(() => {
-    const load = async () => {
+    let mounted = true;
+
+    const loadProducts = async () => {
+      setLoading(true);
       setError("");
 
+      /* ---------------------------------------------------
+         1. ALL PRODUCTS
+         --------------------------------------------------- */
+
       try {
-        const [
-          highlightRes,
-          allRes,
-          fashionRes,
-          electronicsRes,
-        ] = await Promise.all([
-          productAPI.getHighlights(),
-          productAPI.getAll({
-            limit: 50,
-            sort: "newest",
-          }),
-          productAPI.getAll({
-            category: "Fashion",
-            limit: 8,
-            sort: "newest",
-          }),
-          productAPI.getAll({
-            category: "Electronics",
-            limit: 8,
-            sort: "newest",
-          }),
-        ]);
+        const response = await productAPI.getAll({
+          limit: 50,
+          sort: "newest",
+        });
 
-        const all = allRes?.data?.products || [];
-        const fashionFromApi = fashionRes?.data?.products || [];
-        const electronicsFromApi = electronicsRes?.data?.products || [];
+        if (!mounted) return;
 
-        setHighlights(highlightRes.data);
-        setAllProducts(all);
+        const products = response?.data?.products || [];
 
-        // The category API is the source of truth for these two home sections.
-        // Keep the local filter as a fallback so the sections still work if
-        // the category-specific response is empty.
-        setFashionProducts(
-          fashionFromApi.length > 0
-            ? fashionFromApi
-            : all
-                .filter((p) => {
-                  const category = String(p?.category || "").trim().toLowerCase();
-                  return category === "fashion" || category.includes("fashion");
-                })
-                .slice(0, 8)
-        );
+        setAllProducts(products);
 
-        setElectronicsProducts(
-          electronicsFromApi.length > 0
-            ? electronicsFromApi
-            : all
-                .filter((p) => {
-                  const category = String(p?.category || "").trim().toLowerCase();
-                  return (
-                    category.includes("electronic") ||
-                    category.includes("mobile") ||
-                    category.includes("laptop") ||
-                    category.includes("accessor")
-                  );
-                })
-                .slice(0, 8)
+        console.log(
+          "ShopSphere: products loaded:",
+          products.length
         );
       } catch (err) {
-        setError(
-          err?.message || "Unable to load products right now."
+        console.error(
+          "ShopSphere: products API failed:",
+          err
         );
+
+        if (mounted) {
+          setError(
+            err?.message ||
+              "Unable to load products right now."
+          );
+        }
+      }
+
+      /* ---------------------------------------------------
+         2. HIGHLIGHTS
+         --------------------------------------------------- */
+
+      try {
+        const response = await productAPI.getHighlights();
+
+        if (!mounted) return;
+
+        setHighlights(response?.data || null);
+
+        console.log(
+          "ShopSphere: highlights loaded"
+        );
+      } catch (err) {
+        console.error(
+          "ShopSphere: highlights API failed:",
+          err
+        );
+
+        /*
+          IMPORTANT:
+          Highlights fail hone par normal products
+          fail nahi honge.
+        */
+
+        if (mounted) {
+          setHighlights({
+            deals: [],
+            bestSellers: [],
+            featured: [],
+          });
+        }
+      }
+
+      /* ---------------------------------------------------
+         3. FASHION
+         --------------------------------------------------- */
+
+      try {
+        const response = await productAPI.getAll({
+          category: "Fashion",
+          limit: 8,
+          sort: "newest",
+        });
+
+        if (!mounted) return;
+
+        setFashionProducts(
+          response?.data?.products || []
+        );
+      } catch (err) {
+        console.error(
+          "ShopSphere: fashion API failed:",
+          err
+        );
+
+        if (mounted) {
+          setFashionProducts([]);
+        }
+      }
+
+      /* ---------------------------------------------------
+         4. ELECTRONICS
+         --------------------------------------------------- */
+
+      try {
+        const response = await productAPI.getAll({
+          category: "Electronics",
+          limit: 8,
+          sort: "newest",
+        });
+
+        if (!mounted) return;
+
+        setElectronicsProducts(
+          response?.data?.products || []
+        );
+      } catch (err) {
+        console.error(
+          "ShopSphere: electronics API failed:",
+          err
+        );
+
+        if (mounted) {
+          setElectronicsProducts([]);
+        }
+      }
+
+      if (mounted) {
+        setLoading(false);
       }
     };
 
-    load();
+    loadProducts();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* =======================================================
-     TRENDING PRODUCTS
+     TRENDING
      ======================================================= */
 
-  const trending = useMemo(
-    () =>
-      [...allProducts]
-        .sort(
-          (a, b) =>
-            Number(b.rating || 0) - Number(a.rating || 0)
+  const trending = useMemo(() => {
+    return [...allProducts]
+      .sort(
+        (a, b) =>
+          Number(b.rating || 0) -
+          Number(a.rating || 0)
+      )
+      .slice(0, 8);
+  }, [allProducts]);
+
+  /* =======================================================
+     UNDER ₹999
+     ======================================================= */
+
+  const under999 = useMemo(() => {
+    return allProducts
+      .filter(
+        (product) =>
+          Number(product.price || 0) <= 999
+      )
+      .slice(0, 8);
+  }, [allProducts]);
+
+  /* =======================================================
+     FASHION
+     ======================================================= */
+
+  const fashion = useMemo(() => {
+    if (fashionProducts.length > 0) {
+      return fashionProducts.slice(0, 8);
+    }
+
+    return allProducts
+      .filter((product) => {
+        const category = String(
+          product?.category || ""
         )
-        .slice(0, 8),
-    [allProducts]
-  );
+          .trim()
+          .toLowerCase();
+
+        return category === "fashion";
+      })
+      .slice(0, 8);
+  }, [fashionProducts, allProducts]);
 
   /* =======================================================
-     PRODUCTS UNDER ₹999
+     ELECTRONICS
      ======================================================= */
 
-  const under999 = useMemo(
-    () =>
-      allProducts
-        .filter((p) => Number(p.price) <= 999)
-        .slice(0, 8),
-    [allProducts]
-  );
+  const electronics = useMemo(() => {
+    if (electronicsProducts.length > 0) {
+      return electronicsProducts.slice(0, 8);
+    }
+
+    return allProducts
+      .filter((product) => {
+        const category = String(
+          product?.category || ""
+        )
+          .trim()
+          .toLowerCase();
+
+        return (
+          category.includes("electronic") ||
+          category.includes("mobile") ||
+          category.includes("laptop")
+        );
+      })
+      .slice(0, 8);
+  }, [electronicsProducts, allProducts]);
 
   /* =======================================================
-     FASHION PRODUCTS
+     IMAGE ERROR FALLBACK
      ======================================================= */
 
-  const fashion = useMemo(
-    () => fashionProducts.slice(0, 8),
-    [fashionProducts]
-  );
+  const handleCategoryImageError = (event) => {
+    event.currentTarget.style.display = "none";
+    event.currentTarget.parentElement.classList.add(
+      "image-failed"
+    );
+  };
 
   /* =======================================================
-     ELECTRONICS PRODUCTS
+     RENDER
      ======================================================= */
-
-  const electronics = useMemo(
-    () => electronicsProducts.slice(0, 8),
-    [electronicsProducts]
-  );
 
   return (
     <div className="home-page">
@@ -246,7 +366,7 @@ const Home = () => {
       <HeroBanner />
 
       {/* ===================================================
-          TRUST / SERVICE STRIP
+          TRUST STRIP
           =================================================== */}
 
       <section className="trust-strip">
@@ -257,6 +377,7 @@ const Home = () => {
 
             <span>
               <strong>Free Delivery</strong>
+
               <small>
                 On eligible orders over ₹999
               </small>
@@ -268,6 +389,7 @@ const Home = () => {
 
             <span>
               <strong>Easy Returns</strong>
+
               <small>
                 Hassle-free 7-day returns
               </small>
@@ -279,6 +401,7 @@ const Home = () => {
 
             <span>
               <strong>Secure Payments</strong>
+
               <small>
                 Your payment data is protected
               </small>
@@ -290,6 +413,7 @@ const Home = () => {
 
             <span>
               <strong>Customer Support</strong>
+
               <small>
                 We're here when you need us
               </small>
@@ -313,7 +437,8 @@ const Home = () => {
               <h2>Shop by Category</h2>
 
               <p>
-                Explore products across your favorite categories
+                Explore products across your favorite
+                categories
               </p>
             </div>
 
@@ -341,6 +466,7 @@ const Home = () => {
                     src={CATEGORY_IMAGES[category]}
                     alt={`${category} products`}
                     loading="lazy"
+                    onError={handleCategoryImageError}
                   />
 
                 </div>
@@ -348,7 +474,8 @@ const Home = () => {
                 <strong>{category}</strong>
 
                 <span>
-                  Shop now <ArrowRight size={13} />
+                  Shop now
+                  <ArrowRight size={13} />
                 </span>
 
               </Link>
@@ -376,7 +503,9 @@ const Home = () => {
 
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() =>
+              window.location.reload()
+            }
           >
             Try again
           </button>
@@ -395,13 +524,13 @@ const Home = () => {
         tone="section-white"
       >
 
-        {!highlights ? (
+        {loading ? (
           <ProductGridSkeleton count={5} />
-        ) : (
+        ) : highlights?.deals?.length > 0 ? (
 
           <div className="market-product-row">
 
-            {(highlights.deals || [])
+            {highlights.deals
               .slice(0, 8)
               .map((product) => (
                 <ProductCard
@@ -412,6 +541,27 @@ const Home = () => {
 
           </div>
 
+        ) : allProducts.length > 0 ? (
+
+          <div className="market-product-row">
+
+            {allProducts
+              .filter(
+                (product) =>
+                  Number(product.discount || 0) > 0
+              )
+              .slice(0, 8)
+              .map((product) => (
+                <ProductCard
+                  key={product._id}
+                  product={product}
+                />
+              ))}
+
+          </div>
+
+        ) : (
+          <ProductGridSkeleton count={5} />
         )}
 
       </Section>
@@ -421,8 +571,6 @@ const Home = () => {
           =================================================== */}
 
       <section className="container promo-row">
-
-        {/* ELECTRONICS */}
 
         <Link
           to="/products?category=Electronics"
@@ -443,7 +591,8 @@ const Home = () => {
             </p>
 
             <b>
-              Shop Electronics <ArrowRight size={15} />
+              Shop Electronics
+              <ArrowRight size={15} />
             </b>
 
           </div>
@@ -455,8 +604,6 @@ const Home = () => {
           />
 
         </Link>
-
-        {/* FASHION */}
 
         <Link
           to="/products?category=Fashion"
@@ -476,7 +623,8 @@ const Home = () => {
             </p>
 
             <b>
-              Explore Fashion <ArrowRight size={15} />
+              Explore Fashion
+              <ArrowRight size={15} />
             </b>
 
           </div>
@@ -488,8 +636,6 @@ const Home = () => {
           />
 
         </Link>
-
-        {/* HOME */}
 
         <Link
           to="/products?category=Home%20%26%20Kitchen"
@@ -509,7 +655,8 @@ const Home = () => {
             </p>
 
             <b>
-              Shop Home <ArrowRight size={15} />
+              Shop Home
+              <ArrowRight size={15} />
             </b>
 
           </div>
@@ -534,13 +681,13 @@ const Home = () => {
         href="/products"
       >
 
-        {!highlights ? (
+        {loading ? (
           <ProductGridSkeleton count={5} />
-        ) : (
+        ) : highlights?.bestSellers?.length > 0 ? (
 
           <div className="market-product-row">
 
-            {(highlights.bestSellers || [])
+            {highlights.bestSellers
               .slice(0, 8)
               .map((product) => (
                 <ProductCard
@@ -551,12 +698,33 @@ const Home = () => {
 
           </div>
 
+        ) : allProducts.length > 0 ? (
+
+          <div className="market-product-row">
+
+            {allProducts
+              .filter(
+                (product) =>
+                  product.isBestSeller === true
+              )
+              .slice(0, 8)
+              .map((product) => (
+                <ProductCard
+                  key={product._id}
+                  product={product}
+                />
+              ))}
+
+          </div>
+
+        ) : (
+          <ProductGridSkeleton count={5} />
         )}
 
       </Section>
 
       {/* ===================================================
-          TRENDING PRODUCTS
+          TRENDING
           =================================================== */}
 
       <Section
@@ -566,9 +734,9 @@ const Home = () => {
         tone="section-white"
       >
 
-        {!allProducts.length ? (
+        {loading ? (
           <ProductGridSkeleton count={5} />
-        ) : (
+        ) : trending.length > 0 ? (
 
           <div className="market-product-row">
 
@@ -581,12 +749,14 @@ const Home = () => {
 
           </div>
 
+        ) : (
+          <ProductGridSkeleton count={5} />
         )}
 
       </Section>
 
       {/* ===================================================
-          POPULAR ELECTRONICS
+          ELECTRONICS
           =================================================== */}
 
       <Section
@@ -608,16 +778,22 @@ const Home = () => {
 
           </div>
 
-        ) : (
+        ) : loading ? (
 
           <ProductGridSkeleton count={5} />
+
+        ) : (
+
+          <p className="empty-section">
+            No electronics products available.
+          </p>
 
         )}
 
       </Section>
 
       {/* ===================================================
-          POPULAR FASHION
+          FASHION
           =================================================== */}
 
       <Section
@@ -640,16 +816,22 @@ const Home = () => {
 
           </div>
 
-        ) : (
+        ) : loading ? (
 
           <ProductGridSkeleton count={5} />
+
+        ) : (
+
+          <p className="empty-section">
+            No fashion products available.
+          </p>
 
         )}
 
       </Section>
 
       {/* ===================================================
-          SHOPSPHERE SPECIAL BANNER
+          SHOPSPHERE SPECIAL
           =================================================== */}
 
       <section className="container deal-banner">
@@ -683,7 +865,7 @@ const Home = () => {
       </section>
 
       {/* ===================================================
-          DEALS UNDER ₹999
+          UNDER ₹999
           =================================================== */}
 
       <Section
@@ -705,16 +887,22 @@ const Home = () => {
 
           </div>
 
-        ) : (
+        ) : loading ? (
 
           <ProductGridSkeleton count={5} />
+
+        ) : (
+
+          <p className="empty-section">
+            No products under ₹999 found.
+          </p>
 
         )}
 
       </Section>
 
       {/* ===================================================
-          FEATURED PRODUCTS
+          FEATURED
           =================================================== */}
 
       <Section
@@ -724,15 +912,13 @@ const Home = () => {
         tone="section-white"
       >
 
-        {!highlights ? (
-
+        {loading ? (
           <ProductGridSkeleton count={5} />
-
-        ) : (
+        ) : highlights?.featured?.length > 0 ? (
 
           <div className="market-product-row">
 
-            {(highlights.featured || [])
+            {highlights.featured
               .slice(0, 8)
               .map((product) => (
                 <ProductCard
@@ -743,6 +929,29 @@ const Home = () => {
 
           </div>
 
+        ) : allProducts.length > 0 ? (
+
+          <div className="market-product-row">
+
+            {allProducts
+              .filter(
+                (product) =>
+                  product.isFeatured === true
+              )
+              .slice(0, 8)
+              .map((product) => (
+                <ProductCard
+                  key={product._id}
+                  product={product}
+                />
+              ))}
+
+          </div>
+
+        ) : (
+          <p className="empty-section">
+            No featured products available.
+          </p>
         )}
 
       </Section>
